@@ -118,33 +118,13 @@ SONG_TABLE_CREATE = (
 
 SONG_TABLE_INSERT = (
     """
-    BEGIN TRANSACTION;
-
-    INSERT INTO songs (
-        SELECT song_id, title, artist_id, year, duration FROM (
-            SELECT song_id, title, artist_id, year, duration,
-                   ROW_NUMBER() OVER (
-                       PARTITION BY song_id ORDER BY song_id
-                    ) as row_number
-            FROM songs_staging
-        )
-        WHERE row_number = 1
-    );
-
-    UPDATE songs S SET
-    song_id = SS.song_id,
-    title = SS.title,
-    artist_id = SS.artist_id,
-    year = SS.year,
-    duration = SS.duration
-    FROM songs_staging SS
-    WHERE S.song_id = SS.song_id;
-
-    END TRANSACTION;
+    INSERT INTO songs
+    SELECT DISTINCT song_id, title, artist_id, year, duration
+    FROM songs_staging;
     """
 )
 
-SONG_TABLE_DROP = "DROP TABLE IF EXISTS songs"
+SONG_TABLE_DROP = "DROP TABLE IF EXISTS songs CASCADE;"
 
 # Artists table queries
 ARTIST_TABLE_CREATE = (
@@ -163,33 +143,13 @@ ARTIST_TABLE_CREATE = (
 
 ARTIST_TABLE_INSERT = (
     """
-    BEGIN TRANSACTION;
-
-    INSERT INTO artists (
-        SELECT artist_id, artist_name, location, latitude, longitude FROM (
-            SELECT artist_id, artist_name, location, latitude, longitude,
-                   ROW_NUMBER() OVER (
-                       PARTITION BY artist_id ORDER BY artist_id
-                    ) as row_number
-            FROM songs_staging
-        )
-        WHERE row_number = 1
-    );
-
-    UPDATE artists A SET
-    artist_id = SS.artist_id,
-    name = SS.artist_name,
-    location = SS.location,
-    latitude = SS.latitude,
-    longitude = SS.longitude
-    FROM songs_staging SS
-    WHERE A.artist_id = SS.artist_id;
-
-    END TRANSACTION;
+    INSERT INTO artists
+    SELECT DISTINCT artist_id, artist_name, location, latitude, longitude
+    FROM songs_staging;
     """
 )
 
-ARTIST_TABLE_DROP = "DROP TABLE IF EXISTS artists"
+ARTIST_TABLE_DROP = "DROP TABLE IF EXISTS artists CASCADE;"
 
 # Users table queries
 USER_TABLE_CREATE = (
@@ -208,35 +168,14 @@ USER_TABLE_CREATE = (
 
 USER_TABLE_INSERT = (
     """
-    BEGIN TRANSACTION;
-
-    INSERT INTO users (
-        SELECT user_id, first_name, last_name, gender, level FROM (
-            SELECT user_id, first_name, last_name, gender, level,
-                   ROW_NUMBER() OVER (
-                       PARTITION BY user_id ORDER BY user_id
-                    ) as row_number
-            FROM events_staging
-            WHERE page = 'NextSong'
-        )
-        WHERE row_number = 1
-    );
-
-    UPDATE users U SET
-    user_id = ES.user_id,
-    first_name = ES.first_name,
-    last_name = ES.last_name,
-    gender = ES.gender,
-    level = ES.level
-    FROM events_staging ES
-    WHERE U.user_id = ES.user_id
-    AND ES.page = 'NextSong';
-
-    END TRANSACTION;
+    INSERT INTO users
+    SELECT DISTINCT user_id, first_name, last_name, gender, level
+    FROM events_staging
+    WHERE page = 'NextSong';
     """
 )
 
-USER_TABLE_DROP = "DROP TABLE IF EXISTS users;"
+USER_TABLE_DROP = "DROP TABLE IF EXISTS users CASCADE;"
 
 # Time table queries
 TIME_TABLE_CREATE = (
@@ -272,7 +211,7 @@ TIME_TABLE_INSERT = (
     """
 )
 
-TIME_TABLE_DROP = "DROP TABLE IF EXISTS time;"
+TIME_TABLE_DROP = "DROP TABLE IF EXISTS time CASCADE;"
 
 # Query lists
 CREATE_TABLE_QUERIES = [
